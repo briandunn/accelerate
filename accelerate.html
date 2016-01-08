@@ -2,21 +2,13 @@
 <html>
   <head>
     <script src="accelerate.js"></script>
+    <script src="native.js"></script>
   </head>
   <body>
     <div id="accelerate"></div>
+    <button id="go"> GOOOOOO </button>
     <script type='text/javascript'>
-      (function() {
-        var app = Elm.embed(Elm.Accelerate, document.getElementById('accelerate'), { acceleration: {x: 0, y: 0, z:0 }});
-        window.addEventListener('devicemotion', function(event){
-          var
-            x = event.acceleration.x,
-            y = event.acceleration.y,
-            z = event.acceleration.z;
-          if(x && y && z)
-            app.ports.acceleration.send({x:x,y:y,z:z});
-        },true);
-      })();
+      Native.start(Elm.embed(Elm.Accelerate, document.getElementById('accelerate'), { acceleration: {x: 0, y: 0, z:0 }}))
     </script>
   </body>
 </html>
