@@ -5,15 +5,16 @@ import Graphics.Collage exposing (..)
 import Graphics.Element exposing (..)
 import Color
 import Signal
-import Time
+import Time exposing (Time)
 import Text
 import Window
 
-type alias Point = {x:Float, y:Float, z:Float}
+type alias AccelerometerReading = {x:Float, y:Float, z:Float}
+type alias Acceleration = (Time, AccelerometerReading)
 type alias Note = Int
 
 -- PORTS
-port acceleration : Signal Point
+port acceleration : Signal AccelerometerReading
 port note : Signal Note
 port note =
   Signal.map .currentNote state
@@ -21,16 +22,18 @@ port note =
 -- MODEL
 type alias Model =
   { currentNote : Note
-  , currentPoint : Point
+  , currentAcceleration : Acceleration
+  , accelerations : List Acceleration
   }
 
 initialModel : Model
 initialModel =
   { currentNote = 0
-  , currentPoint = { x = 0, y = 0, z = 0 }
+  , accelerations = []
+  , currentAcceleration =  (0, { x = 0, y = 0, z = 0 })
   }
 
-type Action = NoOp | AddPoint Point
+type Action = NoOp | AddAcceleration Acceleration
 
 update : Action -> Model -> Model
 update action model =
@@ -38,23 +41,25 @@ update action model =
     NoOp ->
       model
 
-    AddPoint point ->
-      { model | currentPoint = point, currentNote = pointToNote point }
+    AddAcceleration acceleration ->
+      { model | currentAcceleration = acceleration
+              , accelerations       = List.take 30 (acceleration :: model.accelerations)
+              , currentNote         = accelerationToNote (snd acceleration) }
 
-pointToNote : Point -> Note
-pointToNote point =
-  round(200 + abs ((point.x + point.y + point.z) * 100))
+accelerationToNote : AccelerometerReading -> Note
+accelerationToNote acceleration =
+  round(200 + abs ((acceleration.x + acceleration.y + acceleration.z) * 100))
 
 -- VIEW
 
 view : (Int,Int) -> Model -> Element
 view (w,h) model =
   let
-    c = circle ( model.currentPoint.z * (toFloat w))
-      |> filled Color.red
-      |> move (model.currentPoint.x * (toFloat w), model.currentPoint.y * (toFloat h))
+    drawCircle a {x,y,z} = circle ((z / 2) * (toFloat w))
+      |> filled (Color.rgba 128 0 0 ((toFloat (30 - a)) / 30))
+      |> move (x * (toFloat w), y * (toFloat h))
   in
-    collage w h [c]
+    collage w h (List.indexedMap drawCircle (List.map snd model.accelerations))
 
 inbox : Signal.Mailbox Action
 inbox =
@@ -62,15 +67,11 @@ inbox =
 
 actions : Signal Action
 actions =
-  Signal.merge inbox.signal (Signal.map AddPoint sampledAcceleration)
+  Signal.merge inbox.signal (Signal.map AddAcceleration (Time.timestamp (Signal.sampleOn (Time.fps 30) acceleration)))
 
 state : Signal Model
 state =
   Signal.foldp update initialModel actions
-
-sampledAcceleration : Signal Point
-sampledAcceleration =
-  Signal.sampleOn (Time.fps 30) acceleration
 
 main : Signal Element
 main =
