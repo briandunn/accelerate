@@ -1,0 +1,14 @@
+<!DOCTYPE HTML>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="accelerate.js"></script>
+    <script src="native.js"></script>
+  </head>
+  <body>
+    <div id="accelerate" style='height: 500px'></div>
+    <script type='text/javascript'>
+      Native.start(Elm.embed(Elm.Accelerate, document.getElementById('accelerate'), { acceleration: {x: 0, y: 0, z:0 }}))
+    </script>
+  </body>
+</html>
