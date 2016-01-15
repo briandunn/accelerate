@@ -8,7 +8,7 @@ Native.start = function(app) {
     oscillator.frequency.value = note;
   });
 
-  document.getElementById('go').addEventListener('click', function(event){
+  document.getElementById('accelerate').addEventListener('click', function(event){
     oscillator.start(0);
   });
 
