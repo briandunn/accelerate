@@ -9,12 +9,11 @@ import Time exposing (Time)
 import Text
 import Window
 
-type alias AccelerometerReading = {x:Float, y:Float, z:Float}
-type alias Acceleration = (Time, AccelerometerReading)
+type alias Acceleration = {x:Float, y:Float, z:Float}
 type alias Note = Int
 
 -- PORTS
-port acceleration : Signal AccelerometerReading
+port acceleration : Signal Acceleration
 port note : Signal Note
 port note =
   Signal.map .currentNote state
@@ -30,7 +29,7 @@ initialModel : Model
 initialModel =
   { currentNote = 0
   , accelerations = []
-  , currentAcceleration =  (0, { x = 0, y = 0, z = 0 })
+  , currentAcceleration =  { x = 0, y = 0, z = 0 }
   }
 
 type Action = NoOp | AddAcceleration Acceleration
@@ -44,9 +43,9 @@ update action model =
     AddAcceleration acceleration ->
       { model | currentAcceleration = acceleration
               , accelerations       = List.take 30 (acceleration :: model.accelerations)
-              , currentNote         = accelerationToNote (snd acceleration) }
+              , currentNote         = accelerationToNote acceleration }
 
-accelerationToNote : AccelerometerReading -> Note
+accelerationToNote : Acceleration -> Note
 accelerationToNote acceleration =
   round(200 + abs ((acceleration.x + acceleration.y + acceleration.z) * 100))
 
@@ -67,7 +66,7 @@ inbox =
 
 actions : Signal Action
 actions =
-  Signal.merge inbox.signal (Signal.map AddAcceleration (Time.timestamp (Signal.sampleOn (Time.fps 30) acceleration)))
+  Signal.merge inbox.signal (Signal.map AddAcceleration (Signal.sampleOn (Time.fps 30) acceleration))
 
 state : Signal Model
 state =
